@@ -3,26 +3,14 @@ import { getMood } from './options.js';
 
 const MODEL = 'gemini-2.5-flash-preview-tts';
 
-function apiKeyFor(lang) {
-  const specific = lang === 'ru' ? process.env.GEMINI_API_KEY_RU : process.env.GEMINI_API_KEY_UZ;
-  const key = specific || process.env.GEMINI_API_KEY;
-  if (!key) {
-    throw new Error(
-      `No Gemini API key set for lang="${lang}" (checked GEMINI_API_KEY_${lang.toUpperCase()} and GEMINI_API_KEY)`,
-    );
+let cachedClient = null;
+function getClient() {
+  if (!cachedClient) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error('GEMINI_API_KEY is not set');
+    cachedClient = new GoogleGenAI({ apiKey: key });
   }
-  return key;
-}
-
-const clientCache = new Map();
-function getClient(lang) {
-  const key = apiKeyFor(lang);
-  let client = clientCache.get(key);
-  if (!client) {
-    client = new GoogleGenAI({ apiKey: key });
-    clientCache.set(key, client);
-  }
-  return client;
+  return cachedClient;
 }
 
 function buildPrompt({ text, lang, mood }) {
@@ -32,7 +20,7 @@ function buildPrompt({ text, lang, mood }) {
 }
 
 export async function* streamTtsPcm({ text, lang, voice, mood }, { signal } = {}) {
-  const ai = getClient(lang);
+  const ai = getClient();
   const prompt = buildPrompt({ text, lang, mood });
 
   const stream = await ai.models.generateContentStream({

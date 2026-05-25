@@ -92,8 +92,8 @@ const UI = {
 
 const state = {
   lang: "uz" as LangId,
-  voice: "Charon",
-  mood: "default" as MoodId,
+  voice: "Sadaltager",
+  mood: "math_teacher" as MoodId,
 };
 
 const root = document.getElementById("app")!;

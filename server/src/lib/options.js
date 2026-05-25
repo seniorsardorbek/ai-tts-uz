@@ -13,7 +13,7 @@ export const VOICES = [
   { id: 'Zephyr',        label: 'Zephyr — bright' },
   { id: 'Algieba',       label: 'Algieba — smooth' },
 ];
-export const DEFAULT_VOICE = 'Charon';
+export const DEFAULT_VOICE = 'Sadaltager';
 const VOICE_IDS = new Set(VOICES.map((v) => v.id));
 export const isValidVoice = (id) => typeof id === 'string' && VOICE_IDS.has(id);
 
@@ -56,7 +56,7 @@ export const MOODS = [
     },
   },
 ];
-export const DEFAULT_MOOD = 'default';
+export const DEFAULT_MOOD = 'math_teacher';
 const MOOD_BY_ID = new Map(MOODS.map((m) => [m.id, m]));
 export const getMood = (id) => MOOD_BY_ID.get(id);
 export const isValidMood = (id) => MOOD_BY_ID.has(id);

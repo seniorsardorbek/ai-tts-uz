@@ -15,20 +15,7 @@ app.use("/api/tts", ttsRoute);
 app.listen(PORT, () => {
   console.log(`TTS server listening on http://localhost:${PORT}`);
   console.log(`Allowed origin: ${CLIENT_ORIGIN}`);
-  const hasAny =
-    process.env.GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY_UZ ||
-    process.env.GEMINI_API_KEY_RU;
-  if (!hasAny) {
-    console.warn(
-      "⚠  No Gemini key set (GEMINI_API_KEY / GEMINI_API_KEY_UZ / GEMINI_API_KEY_RU) — requests will fail.",
-    );
-  } else {
-    const keys = [
-      process.env.GEMINI_API_KEY_UZ ? "UZ" : null,
-      process.env.GEMINI_API_KEY_RU ? "RU" : null,
-      process.env.GEMINI_API_KEY ? "fallback" : null,
-    ].filter(Boolean);
-    console.log(`Gemini keys available: ${keys.join(", ")}`);
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("⚠  GEMINI_API_KEY is not set — requests will fail.");
   }
 });
