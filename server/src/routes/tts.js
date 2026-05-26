@@ -69,16 +69,12 @@ router.get('/', async (req, res) => {
 
   console.log(`[tts] MISS ${lang}/${voice}/${mood}  ${key} — "${text.slice(0, 50)}..."`);
 
-  res.setHeader('Content-Type', 'audio/wav');
-  res.setHeader('Transfer-Encoding', 'chunked');
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-Cache', 'MISS');
-
   const tmpFile = `${finalFile}.${process.pid}.${Date.now()}.tmp`;
   const fileStream = fs.createWriteStream(tmpFile);
   const controller = new AbortController();
   let dataBytes = 0;
   let aborted = false;
+  let headerWritten = false;
 
   const cleanupTmp = async () => {
     try {
@@ -95,14 +91,25 @@ router.get('/', async (req, res) => {
 
   try {
     const header = buildWavHeader();
-    res.write(header);
-    fileStream.write(header);
 
     for await (const pcm of streamTtsPcm({ text, lang, voice, mood }, { signal: controller.signal })) {
       if (aborted) break;
+      if (!headerWritten) {
+        res.setHeader('Content-Type', 'audio/wav');
+        res.setHeader('Transfer-Encoding', 'chunked');
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Cache', 'MISS');
+        res.write(header);
+        fileStream.write(header);
+        headerWritten = true;
+      }
       res.write(pcm);
       fileStream.write(pcm);
       dataBytes += pcm.length;
+    }
+
+    if (!headerWritten && !aborted) {
+      throw new Error('TTS yielded no audio chunks');
     }
 
     res.end();
@@ -121,6 +128,7 @@ router.get('/', async (req, res) => {
     console.log(`[tts] cached ${lang}/${voice}/${mood}  ${key} (${dataBytes + 44}b)`);
   } catch (err) {
     console.error('[tts] error:', err);
+    if (!fileStream.destroyed) fileStream.destroy();
     await cleanupTmp();
     if (!res.headersSent) {
       res.status(500).json({ error: 'tts generation failed', message: String(err?.message ?? err) });
