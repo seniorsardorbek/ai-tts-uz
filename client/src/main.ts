@@ -2,13 +2,14 @@ import "./style.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
-const SAMPLES: Record<"uz" | "ru", string> = {
+type LangId = "uz" | "ru";
+type ProviderId = "elevenlabs" | "gemini";
+type MoodId = "default" | "math_teacher" | "novel_reader" | "school_teacher" | "journalist";
+
+const SAMPLES: Record<LangId, string> = {
   uz: "Madinada ikkita olma bor edi lekin Sardor bittasini tortib oldi, Madinada nechta olma qoldi",
   ru: "У Мадины было два яблока, но Сардор забрал одно. Сколько яблок осталось у Мадины?",
 };
-
-type MoodId = "default" | "math_teacher" | "novel_reader" | "school_teacher" | "journalist";
-type LangId = "uz" | "ru";
 
 interface Option<T extends string> { id: T; label: string }
 
@@ -17,18 +18,44 @@ const LANGS: Option<LangId>[] = [
   { id: "ru", label: "Русский" },
 ];
 
-const VOICES: Option<string>[] = [
-  { id: "Charon",       label: "Charon — informative, clear" },
-  { id: "Sulafat",      label: "Sulafat — warm, friendly" },
-  { id: "Aoede",        label: "Aoede — breezy, light" },
+const PROVIDERS: Option<ProviderId>[] = [
+  { id: "elevenlabs", label: "ElevenLabs v3" },
+  { id: "gemini",     label: "Gemini" },
+];
+
+const GEMINI_VOICES: Option<string>[] = [
   { id: "Sadaltager",   label: "Sadaltager — knowledgeable" },
+  { id: "Charon",       label: "Charon — informative" },
+  { id: "Sulafat",      label: "Sulafat — warm" },
+  { id: "Aoede",        label: "Aoede — breezy" },
   { id: "Achird",       label: "Achird — friendly" },
   { id: "Vindemiatrix", label: "Vindemiatrix — gentle" },
-  { id: "Kore",         label: "Kore — firm, neutral" },
-  { id: "Puck",         label: "Puck — upbeat, youthful" },
+  { id: "Kore",         label: "Kore — firm" },
+  { id: "Puck",         label: "Puck — upbeat" },
   { id: "Zephyr",       label: "Zephyr — bright" },
   { id: "Algieba",      label: "Algieba — smooth" },
 ];
+
+const ELEVENLABS_VOICES: Option<string>[] = [
+  { id: "XB0fDUnXU5powFXDhCwa", label: "Charlotte — mature female" },
+  { id: "pNInz6obpgDQGcFmaJgB", label: "Adam — deep male" },
+  { id: "21m00Tcm4TlvDq8ikWAM", label: "Rachel — calm female" },
+  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah — friendly female" },
+  { id: "nPczCjzI2devNBz1zQrb", label: "Brian — friendly male" },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", label: "Liam — articulate male" },
+  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George — warm male" },
+  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica — youthful female" },
+];
+
+const VOICES: Record<ProviderId, Option<string>[]> = {
+  gemini: GEMINI_VOICES,
+  elevenlabs: ELEVENLABS_VOICES,
+};
+
+const DEFAULT_VOICE: Record<ProviderId, string> = {
+  gemini: "Sadaltager",
+  elevenlabs: "XB0fDUnXU5powFXDhCwa", // Charlotte
+};
 
 const MOODS: Record<LangId, Option<MoodId>[]> = {
   uz: [
@@ -49,7 +76,7 @@ const MOODS: Record<LangId, Option<MoodId>[]> = {
 
 const UI = {
   uz: {
-    eyebrow: "Gemini TTS · Stream",
+    eyebrow: "Multi-provider TTS · Stream",
     title: "Ovozli o'qib berish",
     subtitle: "Bitta gap yozing — ovoz darhol oqim qilib eshitiladi.",
     matn: "Matn",
@@ -58,18 +85,19 @@ const UI = {
     play: "Eshitish",
     busy: "Yuklanmoqda…",
     empty: "Matn kiriting.",
-    starting: "Gemini'dan oqim boshlanmoqda…",
+    starting: "Oqim boshlanmoqda…",
     playing: "Eshitilmoqda…",
     autoplayFail: "Avtomatik ijro ishlamadi — pleerda Play tugmasini bosing.",
     loadFail: "Audio yuklab bo'lmadi. Server ishga tushganmi va kalit o'rnatilganmi?",
     ended: "Tugadi.",
+    provider: "Provayder",
     lang: "Til",
     voice: "Ovoz",
     mood: "Kayfiyat",
-    footer: "Birinchi marta — Gemini'dan oqim. Keyingi safar bir xil parametr → cache'dan.",
+    footer: "ElevenLabs v3 sifati ajoyib. UZ rasmiy emas — model auto-detect qiladi.",
   },
   ru: {
-    eyebrow: "Gemini TTS · Stream",
+    eyebrow: "Multi-provider TTS · Stream",
     title: "Озвучка текста",
     subtitle: "Введите одно предложение — голос начнётся сразу, потоком.",
     matn: "Текст",
@@ -78,21 +106,23 @@ const UI = {
     play: "Слушать",
     busy: "Загрузка…",
     empty: "Введите текст.",
-    starting: "Начинается поток от Gemini…",
+    starting: "Начинается поток…",
     playing: "Воспроизведение…",
     autoplayFail: "Автовоспроизведение не сработало — нажмите Play в плеере.",
     loadFail: "Не удалось загрузить аудио. Сервер запущен и ключ установлен?",
     ended: "Готово.",
+    provider: "Провайдер",
     lang: "Язык",
     voice: "Голос",
     mood: "Настроение",
-    footer: "Первый раз — поток от Gemini. Те же параметры повторно — из кэша.",
+    footer: "ElevenLabs v3 — высокое качество, особенно для русского.",
   },
 } as const;
 
 const state = {
+  provider: "elevenlabs" as ProviderId,
   lang: "uz" as LangId,
-  voice: "Sadaltager",
+  voice: DEFAULT_VOICE.elevenlabs,
   mood: "math_teacher" as MoodId,
 };
 
@@ -104,8 +134,16 @@ function optionsHtml<T extends string>(opts: Option<T>[], selected: T) {
     .join("");
 }
 
+function ensureVoiceValid() {
+  const list = VOICES[state.provider];
+  if (!list.some((v) => v.id === state.voice)) {
+    state.voice = DEFAULT_VOICE[state.provider];
+  }
+}
+
 function render() {
   const t = UI[state.lang];
+  ensureVoiceValid();
   root.innerHTML = /* html */ `
     <main class="min-h-full flex items-center justify-center px-4 py-10">
       <div class="w-full max-w-2xl">
@@ -116,20 +154,26 @@ function render() {
         </header>
 
         <section class="rounded-2xl border border-white/10 bg-white/4 backdrop-blur p-5 sm:p-6 shadow-2xl shadow-indigo-950/30">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <label class="block">
+              <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.provider}</span>
+              <select id="sel-provider" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
+                ${optionsHtml(PROVIDERS, state.provider)}
+              </select>
+            </label>
             <label class="block">
               <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.lang}</span>
               <select id="sel-lang" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
                 ${optionsHtml(LANGS, state.lang)}
               </select>
             </label>
-            <label class="block">
+            <label class="block col-span-2 sm:col-span-1">
               <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.voice}</span>
               <select id="sel-voice" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
-                ${optionsHtml(VOICES, state.voice)}
+                ${optionsHtml(VOICES[state.provider], state.voice)}
               </select>
             </label>
-            <label class="block">
+            <label class="block col-span-2 sm:col-span-1">
               <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.mood}</span>
               <select id="sel-mood" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
                 ${optionsHtml(MOODS[state.lang], state.mood)}
@@ -175,6 +219,7 @@ function render() {
 }
 
 let lastUrl = "";
+let lastTextValue = "";
 
 function bind() {
   const t = UI[state.lang];
@@ -185,22 +230,33 @@ function bind() {
   const $playLabel = document.getElementById("play-label") as HTMLSpanElement;
   const $player = document.getElementById("player") as HTMLAudioElement;
   const $status = document.getElementById("status") as HTMLDivElement;
+  const $selProvider = document.getElementById("sel-provider") as HTMLSelectElement;
   const $selLang = document.getElementById("sel-lang") as HTMLSelectElement;
   const $selVoice = document.getElementById("sel-voice") as HTMLSelectElement;
   const $selMood = document.getElementById("sel-mood") as HTMLSelectElement;
 
+  $txt.value = lastTextValue;
   const updateCount = () => {
     $count.textContent = `${$txt.value.length} / 1000`;
   };
-  $txt.addEventListener("input", updateCount);
+  $txt.addEventListener("input", () => {
+    lastTextValue = $txt.value;
+    updateCount();
+  });
   updateCount();
 
   $sample.addEventListener("click", () => {
     $txt.value = SAMPLES[state.lang];
+    lastTextValue = $txt.value;
     updateCount();
     $txt.focus();
   });
 
+  $selProvider.addEventListener("change", () => {
+    state.provider = $selProvider.value as ProviderId;
+    state.voice = DEFAULT_VOICE[state.provider];
+    render();
+  });
   $selLang.addEventListener("change", () => {
     state.lang = $selLang.value as LangId;
     render();
@@ -236,6 +292,7 @@ function bind() {
     }
     const params = new URLSearchParams({
       text,
+      provider: state.provider,
       lang: state.lang,
       voice: state.voice,
       mood: state.mood,

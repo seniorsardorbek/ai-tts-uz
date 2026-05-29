@@ -12,6 +12,7 @@ app.use(cors({ origin: CLIENT_ORIGIN }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/tts", ttsRoute);
 
+
 app.listen(PORT, () => {
   console.log(`TTS server listening on http://localhost:${PORT}`);
   console.log(`Allowed origin: ${CLIENT_ORIGIN}`);

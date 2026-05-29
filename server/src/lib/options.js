@@ -1,21 +1,50 @@
 export const LANGS = ['uz', 'ru'];
 export const DEFAULT_LANG = 'uz';
+export const isValidLang = (lang) => LANGS.includes(lang);
 
-export const VOICES = [
-  { id: 'Charon',        label: 'Charon — informative, clear' },
-  { id: 'Sulafat',       label: 'Sulafat — warm, friendly' },
-  { id: 'Aoede',         label: 'Aoede — breezy, light' },
-  { id: 'Sadaltager',    label: 'Sadaltager — knowledgeable' },
-  { id: 'Achird',        label: 'Achird — friendly' },
-  { id: 'Vindemiatrix',  label: 'Vindemiatrix — gentle' },
-  { id: 'Kore',          label: 'Kore — firm, neutral' },
-  { id: 'Puck',          label: 'Puck — upbeat, youthful' },
-  { id: 'Zephyr',        label: 'Zephyr — bright' },
-  { id: 'Algieba',       label: 'Algieba — smooth' },
+export const PROVIDERS = ['elevenlabs', 'gemini'];
+export const DEFAULT_PROVIDER = 'elevenlabs';
+export const isValidProvider = (p) => PROVIDERS.includes(p);
+
+const GEMINI_VOICES = [
+  { id: 'Sadaltager',   label: 'Sadaltager — knowledgeable' },
+  { id: 'Charon',       label: 'Charon — informative, clear' },
+  { id: 'Sulafat',      label: 'Sulafat — warm, friendly' },
+  { id: 'Aoede',        label: 'Aoede — breezy, light' },
+  { id: 'Achird',       label: 'Achird — friendly' },
+  { id: 'Vindemiatrix', label: 'Vindemiatrix — gentle' },
+  { id: 'Kore',         label: 'Kore — firm, neutral' },
+  { id: 'Puck',         label: 'Puck — upbeat, youthful' },
+  { id: 'Zephyr',       label: 'Zephyr — bright' },
+  { id: 'Algieba',      label: 'Algieba — smooth' },
 ];
-export const DEFAULT_VOICE = 'Sadaltager';
-const VOICE_IDS = new Set(VOICES.map((v) => v.id));
-export const isValidVoice = (id) => typeof id === 'string' && VOICE_IDS.has(id);
+
+// ElevenLabs default library voices — all multilingual.
+const ELEVENLABS_VOICES = [
+  { id: 'XB0fDUnXU5powFXDhCwa', label: 'Charlotte — mature female (multi)' },
+  { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam — deep male' },
+  { id: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel — calm female' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah — friendly female' },
+  { id: 'nPczCjzI2devNBz1zQrb', label: 'Brian — friendly male' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', label: 'Liam — articulate male' },
+  { id: 'JBFqnCBsd6RMkjVDRZzb', label: 'George — warm male' },
+  { id: 'cgSgspJ2msm6clMCkdW9', label: 'Jessica — youthful female' },
+];
+
+export const VOICES = {
+  gemini: GEMINI_VOICES,
+  elevenlabs: ELEVENLABS_VOICES,
+};
+
+export const DEFAULT_VOICE = {
+  gemini: 'Sadaltager',
+  elevenlabs: 'XB0fDUnXU5powFXDhCwa', // Charlotte
+};
+
+export function isValidVoice({ provider, voice }) {
+  const list = VOICES[provider];
+  return Array.isArray(list) && list.some((v) => v.id === voice);
+}
 
 export const MOODS = [
   {
@@ -60,4 +89,3 @@ export const DEFAULT_MOOD = 'math_teacher';
 const MOOD_BY_ID = new Map(MOODS.map((m) => [m.id, m]));
 export const getMood = (id) => MOOD_BY_ID.get(id);
 export const isValidMood = (id) => MOOD_BY_ID.has(id);
-export const isValidLang = (lang) => LANGS.includes(lang);
