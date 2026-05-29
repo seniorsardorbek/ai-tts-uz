@@ -2,8 +2,8 @@ export const LANGS = ['uz', 'ru'];
 export const DEFAULT_LANG = 'uz';
 export const isValidLang = (lang) => LANGS.includes(lang);
 
-export const PROVIDERS = ['elevenlabs', 'gemini'];
-export const DEFAULT_PROVIDER = 'elevenlabs';
+export const PROVIDERS = ['gemini', 'elevenlabs'];
+export const DEFAULT_PROVIDER = 'gemini';
 export const isValidProvider = (p) => PROVIDERS.includes(p);
 
 const GEMINI_VOICES = [

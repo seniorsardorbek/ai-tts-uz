@@ -19,8 +19,8 @@ const LANGS: Option<LangId>[] = [
 ];
 
 const PROVIDERS: Option<ProviderId>[] = [
-  { id: "elevenlabs", label: "ElevenLabs v3" },
   { id: "gemini",     label: "Gemini" },
+  { id: "elevenlabs", label: "ElevenLabs v3" },
 ];
 
 const GEMINI_VOICES: Option<string>[] = [
@@ -120,9 +120,9 @@ const UI = {
 } as const;
 
 const state = {
-  provider: "elevenlabs" as ProviderId,
+  provider: "gemini" as ProviderId,
   lang: "uz" as LangId,
-  voice: DEFAULT_VOICE.elevenlabs,
+  voice: DEFAULT_VOICE.gemini,
   mood: "math_teacher" as MoodId,
 };
 
