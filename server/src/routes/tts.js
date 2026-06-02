@@ -82,13 +82,15 @@ router.get('/', async (req, res) => {
     const finalFile = path.join(dir, `${key}${fileExt}`);
 
     if (fs.existsSync(finalFile)) {
-      const stat = await fsp.stat(finalFile);
+      // sendFile handles HTTP Range (206 Partial Content), Accept-Ranges,
+      // ETag/Last-Modified + conditional 304 — required for browser <audio>
+      // seeking/streaming. Content-Type set first so sendFile keeps ours.
       res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Length', stat.size);
-      res.setHeader('Accept-Ranges', 'bytes');
       res.setHeader('X-Cache', 'HIT');
-      fs.createReadStream(finalFile).pipe(res);
-      console.log(`[tts] HIT  ${provider}/${lang}/${voice}/${mood} ${key} (${stat.size}b)`);
+      console.log(`[tts] HIT  ${provider}/${lang}/${voice}/${mood} ${key}`);
+      res.sendFile(finalFile, { maxAge: '1h', acceptRanges: true }, (err) => {
+        if (err && !res.headersSent) res.status(500).end();
+      });
       return;
     }
 
