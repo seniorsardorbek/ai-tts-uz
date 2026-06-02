@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { cacheKey } from '../lib/cacheKey.js';
 import { buildWavHeader, fixWavHeader } from '../lib/wav.js';
 import { getProvider } from '../lib/providers.js';
+import { listVoices as listElevenLabsVoices } from '../lib/elevenlabs.js';
 import {
   DEFAULT_LANG,
   DEFAULT_MOOD,
@@ -28,13 +29,16 @@ const MAX_TEXT_LEN = 1000;
 
 const router = Router();
 
-router.get('/options', (_req, res) => {
+router.get('/options', async (_req, res) => {
+  // ElevenLabs voices are fetched live (all account voices, Turkic first);
+  // Gemini stays static. Falls back internally if the API is unreachable.
+  const elevenlabs = await listElevenLabsVoices().catch(() => VOICES.elevenlabs);
   res.json({
     langs: LANGS,
     defaultLang: DEFAULT_LANG,
     providers: PROVIDERS,
     defaultProvider: DEFAULT_PROVIDER,
-    voices: VOICES,
+    voices: { ...VOICES, elevenlabs },
     defaultVoice: DEFAULT_VOICE,
     moods: MOODS.map(({ id, label }) => ({ id, label })),
     defaultMood: DEFAULT_MOOD,
@@ -60,9 +64,12 @@ router.get('/', async (req, res) => {
     const lang     = isValidLang(req.query.lang)         ? req.query.lang     : DEFAULT_LANG;
     const mood     = isValidMood(req.query.mood)         ? req.query.mood     : DEFAULT_MOOD;
     const voiceArg = typeof req.query.voice === 'string' ? req.query.voice    : '';
-    const voice = isValidVoice({ provider, voice: voiceArg })
-      ? voiceArg
-      : DEFAULT_VOICE[provider];
+    // ElevenLabs voices are dynamic (fetched from the API), so any non-empty id is
+    // accepted — ElevenLabs itself rejects invalid ones. Gemini stays strictly validated.
+    const voiceOk = provider === 'elevenlabs'
+      ? voiceArg.trim().length > 0
+      : isValidVoice({ provider, voice: voiceArg });
+    const voice = voiceOk ? voiceArg : DEFAULT_VOICE[provider];
 
     if (!text.trim()) {
       res.status(400).json({ error: 'text query param is required' });

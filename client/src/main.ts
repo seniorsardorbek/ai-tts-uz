@@ -47,14 +47,16 @@ const ELEVENLABS_VOICES: Option<string>[] = [
   { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica — youthful female" },
 ];
 
-const VOICES: Record<ProviderId, Option<string>[]> = {
+// Initial fallback; replaced at runtime by the server's /api/tts/options
+// (ElevenLabs voices are fetched live there — all account voices, Turkic first).
+let VOICES: Record<ProviderId, Option<string>[]> = {
   gemini: GEMINI_VOICES,
   elevenlabs: ELEVENLABS_VOICES,
 };
 
-const DEFAULT_VOICE: Record<ProviderId, string> = {
+let DEFAULT_VOICE: Record<ProviderId, string> = {
   gemini: "Sadaltager",
-  elevenlabs: "XB0fDUnXU5powFXDhCwa", // Charlotte
+  elevenlabs: "ZaoBgxgzPhoCm533Pb7B", // Zeynep (TR)
 };
 
 const MOODS: Record<LangId, Option<MoodId>[]> = {
@@ -94,7 +96,7 @@ const UI = {
     lang: "Til",
     voice: "Ovoz",
     mood: "Kayfiyat",
-    footer: "ElevenLabs v3 sifati ajoyib. UZ rasmiy emas — model auto-detect qiladi.",
+    footer: "ElevenLabs v3 · O'zbek uchun turkcha fonetika + transliteratsiya qo'llaniladi.",
   },
   ru: {
     eyebrow: "Multi-provider TTS · Stream",
@@ -320,4 +322,21 @@ function bind() {
   });
 }
 
+async function loadOptions() {
+  try {
+    const resp = await fetch(`${API_BASE}/api/tts/options`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data?.voices?.gemini && data?.voices?.elevenlabs) {
+      VOICES = data.voices;
+    }
+    if (data?.defaultVoice) DEFAULT_VOICE = data.defaultVoice;
+    ensureVoiceValid();
+    render();
+  } catch {
+    /* keep fallback voices */
+  }
+}
+
 render();
+loadOptions();
