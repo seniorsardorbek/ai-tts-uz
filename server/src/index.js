@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import ttsRoute from "./routes/tts.js";
+import gradeRoute from "./routes/grade.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -9,9 +10,11 @@ const PORT = Number(process.env.PORT) || 4000;
 // CORS open to all origins — public TTS API (no cookies/credentials),
 // so any site can call it. Reflects request origin + allows `*`.
 app.use(cors());
+app.use(express.json({ limit: "1mb" })); // text-mode grading bodies only; skips multipart + GET tts
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/tts", ttsRoute);
+app.use("/api/grade", gradeRoute);
 
 
 app.listen(PORT, () => {
