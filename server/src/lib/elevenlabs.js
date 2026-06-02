@@ -5,13 +5,42 @@ const OUTPUT_FORMAT = 'mp3_44100_128';
 const MAX_ATTEMPTS = 3;
 const BASE_DELAY_MS = 600;
 
-// UZ is not officially supported by ElevenLabs v3.
-// Omitting language_code → model auto-detects (often picks tr/ru-ish phonetics).
-// For RU we hint explicitly.
+// ElevenLabs v3 has no Uzbek (`language_code: 'uz'` → 400 unsupported_language).
+// Turkish is the closest *supported* Turkic phonetics, so we render UZ as 'tr'.
+// Without this the model applies English letter rules → strong English accent.
 const LANG_HINT = {
-  uz: undefined,
+  uz: 'tr',
   ru: 'ru',
 };
+
+// Uzbek Latin → Turkish-orthography respelling.
+// Under language_code 'tr' the engine reads Turkish letter rules, so we remap
+// Uzbek-specific graphemes to their nearest Turkish spelling. This pushes the
+// pronunciation further from English and closer to native Uzbek.
+const APOS = "['’‘ʻʼ`´]"; // ' ’ ‘ ʻ ʼ ` ´
+
+function uzToTurkic(text) {
+  let t = text.normalize('NFC');
+  // oʻ / gʻ digraphs (vowel/consonant + tutuq) — before standalone apostrophe removal
+  t = t
+    .replace(new RegExp(`O${APOS}`, 'g'), 'O')
+    .replace(new RegExp(`o${APOS}`, 'g'), 'o')
+    .replace(new RegExp(`G${APOS}`, 'g'), 'Ğ')
+    .replace(new RegExp(`g${APOS}`, 'g'), 'ğ');
+  // digraphs
+  t = t
+    .replace(/SH/g, 'Ş').replace(/Sh/g, 'Ş').replace(/sh/g, 'ş')
+    .replace(/CH/g, 'Ç').replace(/Ch/g, 'Ç').replace(/ch/g, 'ç');
+  // single letters: x→h (xona), q→k (qush), j→c (Turkish c=/dʒ/≈Uzbek j), w→v
+  t = t
+    .replace(/X/g, 'H').replace(/x/g, 'h')
+    .replace(/Q/g, 'K').replace(/q/g, 'k')
+    .replace(/J/g, 'C').replace(/j/g, 'c')
+    .replace(/W/g, 'V').replace(/w/g, 'v');
+  // leftover tutuq belgisi (glottal-stop marker) → drop
+  t = t.replace(new RegExp(APOS, 'g'), '');
+  return t;
+}
 
 const MOOD_SETTINGS = {
   default:        { stability: 0.5,  similarity_boost: 0.75, style: 0.0,  use_speaker_boost: true },
@@ -41,8 +70,9 @@ function isRetryable(err) {
 async function* streamOnce({ text, lang, voice, mood }, { signal } = {}) {
   const voice_settings = MOOD_SETTINGS[mood] ?? MOOD_SETTINGS.default;
   const language_code = LANG_HINT[lang];
+  const spoken = lang === 'uz' ? uzToTurkic(text) : text.normalize('NFC');
   const body = {
-    text: text.normalize('NFC'),
+    text: spoken,
     model_id: model(),
     voice_settings,
     ...(language_code ? { language_code } : {}),
