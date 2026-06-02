@@ -19,19 +19,34 @@ const GEMINI_VOICES = [
   { id: 'Algieba',      label: 'Algieba — smooth' },
 ];
 
-// Turkic-native voices for Uzbek.
-// ElevenLabs v3 has no Uzbek; we render UZ with language_code 'tr' (see elevenlabs.js).
-// A Turkish native speaker's voice carries ZERO English accent and Turkish phonetics are
-// the closest match to Uzbek — far more native-sounding than the English library voices.
+// Static ElevenLabs voice list (Turkic-native first for Uzbek).
+// UZ is rendered with language_code 'tr' (see elevenlabs.js) — a Turkish native
+// voice carries no English accent and Turkish phonetics are the closest to Uzbek.
 const ELEVENLABS_VOICES = [
-  { id: 'ZaoBgxgzPhoCm533Pb7B', label: 'Zeynep — iliq, ayol (TR)' },
-  { id: 'viS7lLPHrcuZhqLroKB8', label: 'Cengizhan — diktor, erkak (TR)' },
-  { id: '3BJTXArCvMUh3FJduxup', label: 'Deniz — vazmin diktor, ayol (TR)' },
-  { id: '9q3uhh453wT9R7x3sW1i', label: 'Alper — tinch, erkak (TR)' },
-  { id: 'AT6MdagXHAuKZlvWWwtT', label: 'Umitales — tinch, ayol (TR)' },
-  { id: '5rpbXsoJ8S0uNek3pM5V', label: 'Yonca — iliq, ayol (TR)' },
-  { id: 'tF3iUGgHCAKxGm0PKhmW', label: 'Yalcin — chuqur, erkak (TR)' },
-  { id: '1FGxfngSjwAlP8hsMWj3', label: 'Sifa — hikoyachi, ayol (TR)' },
+  { id: '9q3uhh453wT9R7x3sW1i', label: 'Alper (istanbul, male)' },
+  { id: 'viS7lLPHrcuZhqLroKB8', label: 'Cengizhan Atalay - Narrator (istanbul, male)' },
+  { id: 'ZaoBgxgzPhoCm533Pb7B', label: 'Zeynep Signature Voice Warm (istanbul, female)' },
+  { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam - Dominant, Firm (american, male)' },
+  { id: 'Xb7hH8MSUJpSbSDYk0k2', label: 'Alice - Clear, Engaging Educator (british, female)' },
+  { id: 'hpp4J3VqNfWAUOO0d1Us', label: 'Bella - Professional, Bright, Warm (american, female)' },
+  { id: 'pqHfZKP75CvOlQylNhV4', label: 'Bill - Wise, Mature, Balanced (american, male)' },
+  { id: 'nPczCjzI2devNBz1zQrb', label: 'Brian - Deep, Resonant and Comforting (american, male)' },
+  { id: 'N2lVS1w4EtoT3dr4eOWO', label: 'Callum - Husky Trickster (american, male)' },
+  { id: 'IKne3meq5aSn9XLyUdCD', label: 'Charlie - Deep, Confident, Energetic (australian, male)' },
+  { id: 'iP95p4xoKVk53GoZ742B', label: 'Chris - Charming, Down-to-Earth (american, male)' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', label: 'Daniel - Steady Broadcaster (british, male)' },
+  { id: 'cjVigY5qzO86Huf0OWal', label: 'Eric - Smooth, Trustworthy (american, male)' },
+  { id: 'JBFqnCBsd6RMkjVDRZzb', label: 'George - Warm, Captivating Storyteller (british, male)' },
+  { id: 'SOYHLrjzK2X1ezoPC6cr', label: 'Harry - Fierce Warrior (american, male)' },
+  { id: 'cgSgspJ2msm6clMCkdW9', label: 'Jessica - Playful, Bright, Warm (american, female)' },
+  { id: 'FGY2WhTYpPnrIDTdsKH5', label: 'Laura - Enthusiast, Quirky Attitude (american, female)' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', label: 'Liam - Energetic, Social Media Creator (american, male)' },
+  { id: 'pFZP5JQG7iQjIQuC4Bku', label: 'Lily - Velvety Actress (british, female)' },
+  { id: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda - Knowledgable, Professional (american, female)' },
+  { id: 'SAz9YHcvj6GT2YYXdXww', label: 'River - Relaxed, Neutral, Informative (american, neutral)' },
+  { id: 'CwhRBWXzGAHq8TQ4Fs17', label: 'Roger - Laid-Back, Casual, Resonant (american, male)' },
+  { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Sarah - Mature, Reassuring, Confident (american, female)' },
+  { id: 'bIHbv24MWmeRgasZH58o', label: 'Will - Relaxed Optimist (american, male)' },
 ];
 
 export const VOICES = {
@@ -88,7 +103,7 @@ export const MOODS = [
     },
   },
 ];
-export const DEFAULT_MOOD = 'math_teacher';
+export const DEFAULT_MOOD = 'school_teacher';
 const MOOD_BY_ID = new Map(MOODS.map((m) => [m.id, m]));
 export const getMood = (id) => MOOD_BY_ID.get(id);
 export const isValidMood = (id) => MOOD_BY_ID.has(id);

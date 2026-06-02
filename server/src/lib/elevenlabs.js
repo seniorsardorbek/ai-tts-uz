@@ -56,47 +56,6 @@ function apiKey() {
   return k;
 }
 
-// Static fallback (Turkish-native) used if the live voices API is unreachable.
-const FALLBACK_VOICES = [
-  { id: 'ZaoBgxgzPhoCm533Pb7B', label: 'Zeynep — iliq, ayol (TR)' },
-  { id: 'viS7lLPHrcuZhqLroKB8', label: 'Cengizhan — diktor, erkak (TR)' },
-  { id: '9q3uhh453wT9R7x3sW1i', label: 'Alper — tinch, erkak (TR)' },
-];
-
-let voicesCache = { at: 0, list: null };
-const VOICES_TTL_MS = 10 * 60 * 1000;
-
-function labelFor(v) {
-  const l = v.labels || {};
-  const meta = [l.accent || l.language, l.gender].filter(Boolean).join(', ');
-  return meta ? `${v.name} (${meta})` : v.name;
-}
-
-// Live list of all voices in the account (premade + professional/Turkish), Turkic first.
-export async function listVoices({ signal } = {}) {
-  const now = Date.now();
-  if (voicesCache.list && now - voicesCache.at < VOICES_TTL_MS) return voicesCache.list;
-  try {
-    const resp = await fetch('https://api.elevenlabs.io/v2/voices?page_size=100', {
-      headers: { 'xi-api-key': apiKey() },
-      signal,
-    });
-    if (!resp.ok) throw new Error(`voices ${resp.status}`);
-    const data = await resp.json();
-    const voices = (data.voices || [])
-      .map((v) => ({ id: v.voice_id, label: labelFor(v), _tr: (v.labels?.language || '') === 'tr' }))
-      .sort((a, b) => (b._tr - a._tr) || a.label.localeCompare(b.label))
-      .map(({ id, label }) => ({ id, label }));
-    if (voices.length) {
-      voicesCache = { at: now, list: voices };
-      return voices;
-    }
-  } catch (err) {
-    console.warn(`[elevenlabs] listVoices failed (${err.message || err}); using fallback`);
-  }
-  return FALLBACK_VOICES;
-}
-
 function model() {
   return process.env.ELEVENLABS_MODEL || DEFAULT_MODEL;
 }

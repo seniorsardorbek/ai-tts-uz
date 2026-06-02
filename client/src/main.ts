@@ -37,24 +37,38 @@ const GEMINI_VOICES: Option<string>[] = [
 ];
 
 const ELEVENLABS_VOICES: Option<string>[] = [
-  { id: "XB0fDUnXU5powFXDhCwa", label: "Charlotte — mature female" },
-  { id: "pNInz6obpgDQGcFmaJgB", label: "Adam — deep male" },
-  { id: "21m00Tcm4TlvDq8ikWAM", label: "Rachel — calm female" },
-  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah — friendly female" },
-  { id: "nPczCjzI2devNBz1zQrb", label: "Brian — friendly male" },
-  { id: "TX3LPaxmHKxFdv7VOQHJ", label: "Liam — articulate male" },
-  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George — warm male" },
-  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica — youthful female" },
+  { id: "9q3uhh453wT9R7x3sW1i", label: "Alper (istanbul, male)" },
+  { id: "viS7lLPHrcuZhqLroKB8", label: "Cengizhan Atalay - Narrator (istanbul, male)" },
+  { id: "ZaoBgxgzPhoCm533Pb7B", label: "Zeynep Signature Voice Warm (istanbul, female)" },
+  { id: "pNInz6obpgDQGcFmaJgB", label: "Adam - Dominant, Firm (american, male)" },
+  { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice - Clear, Engaging Educator (british, female)" },
+  { id: "hpp4J3VqNfWAUOO0d1Us", label: "Bella - Professional, Bright, Warm (american, female)" },
+  { id: "pqHfZKP75CvOlQylNhV4", label: "Bill - Wise, Mature, Balanced (american, male)" },
+  { id: "nPczCjzI2devNBz1zQrb", label: "Brian - Deep, Resonant and Comforting (american, male)" },
+  { id: "N2lVS1w4EtoT3dr4eOWO", label: "Callum - Husky Trickster (american, male)" },
+  { id: "IKne3meq5aSn9XLyUdCD", label: "Charlie - Deep, Confident, Energetic (australian, male)" },
+  { id: "iP95p4xoKVk53GoZ742B", label: "Chris - Charming, Down-to-Earth (american, male)" },
+  { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel - Steady Broadcaster (british, male)" },
+  { id: "cjVigY5qzO86Huf0OWal", label: "Eric - Smooth, Trustworthy (american, male)" },
+  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George - Warm, Captivating Storyteller (british, male)" },
+  { id: "SOYHLrjzK2X1ezoPC6cr", label: "Harry - Fierce Warrior (american, male)" },
+  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica - Playful, Bright, Warm (american, female)" },
+  { id: "FGY2WhTYpPnrIDTdsKH5", label: "Laura - Enthusiast, Quirky Attitude (american, female)" },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", label: "Liam - Energetic, Social Media Creator (american, male)" },
+  { id: "pFZP5JQG7iQjIQuC4Bku", label: "Lily - Velvety Actress (british, female)" },
+  { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda - Knowledgable, Professional (american, female)" },
+  { id: "SAz9YHcvj6GT2YYXdXww", label: "River - Relaxed, Neutral, Informative (american, neutral)" },
+  { id: "CwhRBWXzGAHq8TQ4Fs17", label: "Roger - Laid-Back, Casual, Resonant (american, male)" },
+  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah - Mature, Reassuring, Confident (american, female)" },
+  { id: "bIHbv24MWmeRgasZH58o", label: "Will - Relaxed Optimist (american, male)" },
 ];
 
-// Initial fallback; replaced at runtime by the server's /api/tts/options
-// (ElevenLabs voices are fetched live there — all account voices, Turkic first).
-let VOICES: Record<ProviderId, Option<string>[]> = {
+const VOICES: Record<ProviderId, Option<string>[]> = {
   gemini: GEMINI_VOICES,
   elevenlabs: ELEVENLABS_VOICES,
 };
 
-let DEFAULT_VOICE: Record<ProviderId, string> = {
+const DEFAULT_VOICE: Record<ProviderId, string> = {
   gemini: "Sadaltager",
   elevenlabs: "ZaoBgxgzPhoCm533Pb7B", // Zeynep (TR)
 };
@@ -125,7 +139,7 @@ const state = {
   provider: "gemini" as ProviderId,
   lang: "uz" as LangId,
   voice: DEFAULT_VOICE.gemini,
-  mood: "math_teacher" as MoodId,
+  mood: "school_teacher" as MoodId,
 };
 
 const root = document.getElementById("app")!;
@@ -322,21 +336,4 @@ function bind() {
   });
 }
 
-async function loadOptions() {
-  try {
-    const resp = await fetch(`${API_BASE}/api/tts/options`);
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (data?.voices?.gemini && data?.voices?.elevenlabs) {
-      VOICES = data.voices;
-    }
-    if (data?.defaultVoice) DEFAULT_VOICE = data.defaultVoice;
-    ensureVoiceValid();
-    render();
-  } catch {
-    /* keep fallback voices */
-  }
-}
-
 render();
-loadOptions();
