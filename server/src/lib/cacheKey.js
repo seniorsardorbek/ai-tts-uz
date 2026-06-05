@@ -9,7 +9,9 @@ export function normalizeText(text) {
     .replace(/[.!?,;:]+$/u, '');
 }
 
-export function cacheKey({ provider, text, lang, voice, mood }) {
-  const payload = `${provider}|${lang}|${voice}|${mood}|${normalizeText(text)}`;
-  return crypto.createHash('sha256').update(payload).digest('hex');
+export function cacheKey({ gender, text }) {
+  return crypto
+    .createHash('sha256')
+    .update(`${gender}|${normalizeText(text)}`)
+    .digest('hex');
 }

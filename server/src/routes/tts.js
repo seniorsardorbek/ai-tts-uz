@@ -4,41 +4,26 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cacheKey } from '../lib/cacheKey.js';
-import { buildWavHeader, fixWavHeader } from '../lib/wav.js';
-import { getProvider } from '../lib/providers.js';
+import { streamAudio } from '../lib/elevenlabs.js';
 import {
-  DEFAULT_LANG,
-  DEFAULT_MOOD,
-  DEFAULT_PROVIDER,
-  DEFAULT_VOICE,
-  LANGS,
-  MOODS,
-  PROVIDERS,
-  VOICES,
-  isValidLang,
-  isValidMood,
-  isValidProvider,
-  isValidVoice,
+  DEFAULT_GENDER,
+  GENDERS,
+  GENDER_TO_VOICE,
+  LOCKED_MOOD,
+  isValidGender,
 } from '../lib/options.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.resolve(__dirname, '../../cache');
 
 const MAX_TEXT_LEN = 1000;
+const CONTENT_TYPE = 'audio/mpeg';
+const FILE_EXT = '.mp3';
 
 const router = Router();
 
 router.get('/options', (_req, res) => {
-  res.json({
-    langs: LANGS,
-    defaultLang: DEFAULT_LANG,
-    providers: PROVIDERS,
-    defaultProvider: DEFAULT_PROVIDER,
-    voices: VOICES,
-    defaultVoice: DEFAULT_VOICE,
-    moods: MOODS.map(({ id, label }) => ({ id, label })),
-    defaultMood: DEFAULT_MOOD,
-  });
+  res.json({ genders: GENDERS, defaultGender: DEFAULT_GENDER });
 });
 
 router.get('/', async (req, res) => {
@@ -56,13 +41,8 @@ router.get('/', async (req, res) => {
 
   try {
     const text = typeof req.query.text === 'string' ? req.query.text : '';
-    const provider = isValidProvider(req.query.provider) ? req.query.provider : DEFAULT_PROVIDER;
-    const lang     = isValidLang(req.query.lang)         ? req.query.lang     : DEFAULT_LANG;
-    const mood     = isValidMood(req.query.mood)         ? req.query.mood     : DEFAULT_MOOD;
-    const voiceArg = typeof req.query.voice === 'string' ? req.query.voice    : '';
-    const voice = isValidVoice({ provider, voice: voiceArg })
-      ? voiceArg
-      : DEFAULT_VOICE[provider];
+    const gender = isValidGender(req.query.g) ? req.query.g : DEFAULT_GENDER;
+    const voice = GENDER_TO_VOICE[gender];
 
     if (!text.trim()) {
       res.status(400).json({ error: 'text query param is required' });
@@ -73,28 +53,22 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    const { streamAudio, format, contentType, fileExt } = getProvider(provider);
-    const isWav = format === 'wav';
-
-    const key = cacheKey({ provider, text, lang, voice, mood });
-    const dir = path.join(CACHE_DIR, provider, lang);
+    const key = cacheKey({ gender, text });
+    const dir = path.join(CACHE_DIR, gender);
     await fsp.mkdir(dir, { recursive: true });
-    const finalFile = path.join(dir, `${key}${fileExt}`);
+    const finalFile = path.join(dir, `${key}${FILE_EXT}`);
 
     if (fs.existsSync(finalFile)) {
-      // sendFile handles HTTP Range (206 Partial Content), Accept-Ranges,
-      // ETag/Last-Modified + conditional 304 — required for browser <audio>
-      // seeking/streaming. Content-Type set first so sendFile keeps ours.
-      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Type', CONTENT_TYPE);
       res.setHeader('X-Cache', 'HIT');
-      console.log(`[tts] HIT  ${provider}/${lang}/${voice}/${mood} ${key}`);
+      console.log(`[tts] HIT  ${gender} ${key}`);
       res.sendFile(finalFile, { maxAge: '1h', acceptRanges: true }, (err) => {
         if (err && !res.headersSent) res.status(500).end();
       });
       return;
     }
 
-    console.log(`[tts] MISS ${provider}/${lang}/${voice}/${mood} ${key} — "${text.slice(0, 50)}..."`);
+    console.log(`[tts] MISS ${gender} ${key} — "${text.slice(0, 50)}..."`);
 
     tmpFile = `${finalFile}.${process.pid}.${Date.now()}.tmp`;
     fileStream = fs.createWriteStream(tmpFile);
@@ -106,18 +80,16 @@ router.get('/', async (req, res) => {
       }
     });
 
-    for await (const chunk of streamAudio({ text, lang, voice, mood }, { signal: controller.signal })) {
+    for await (const chunk of streamAudio(
+      { text, voice, mood: LOCKED_MOOD },
+      { signal: controller.signal },
+    )) {
       if (aborted) break;
       if (!headerWritten) {
-        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Type', CONTENT_TYPE);
         res.setHeader('Transfer-Encoding', 'chunked');
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-Cache', 'MISS');
-        if (isWav) {
-          const wavHeader = buildWavHeader();
-          res.write(wavHeader);
-          fileStream.write(wavHeader);
-        }
         headerWritten = true;
       }
       res.write(chunk);
@@ -140,10 +112,8 @@ router.get('/', async (req, res) => {
       return;
     }
 
-    if (isWav) await fixWavHeader(tmpFile, dataBytes);
     await fsp.rename(tmpFile, finalFile);
-    const totalBytes = dataBytes + (isWav ? 44 : 0);
-    console.log(`[tts] cached ${provider}/${lang}/${voice}/${mood} ${key} (${totalBytes}b)`);
+    console.log(`[tts] cached ${gender} ${key} (${dataBytes}b)`);
   } catch (err) {
     console.error('[tts] error:', err.message || err);
     if (fileStream && !fileStream.destroyed) fileStream.destroy();

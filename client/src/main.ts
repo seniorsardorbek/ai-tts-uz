@@ -2,338 +2,157 @@ import "./style.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
 
-type LangId = "uz" | "ru";
-type ProviderId = "elevenlabs" | "gemini";
-type MoodId = "default" | "math_teacher" | "novel_reader" | "school_teacher" | "journalist";
+type Gender = "m" | "f";
 
-const SAMPLES: Record<LangId, string> = {
-  uz: "Madinada ikkita olma bor edi lekin Sardor bittasini tortib oldi, Madinada nechta olma qoldi",
-  ru: "У Мадины было два яблока, но Сардор забрал одно. Сколько яблок осталось у Мадины?",
-};
+const SAMPLE =
+  "Madinada ikkita olma bor edi lekin Sardor bittasini tortib oldi, Madinada nechta olma qoldi";
 
-interface Option<T extends string> { id: T; label: string }
-
-const LANGS: Option<LangId>[] = [
-  { id: "uz", label: "O'zbek" },
-  { id: "ru", label: "Русский" },
-];
-
-const PROVIDERS: Option<ProviderId>[] = [
-  { id: "gemini",     label: "Gemini" },
-  { id: "elevenlabs", label: "ElevenLabs v3" },
-];
-
-const GEMINI_VOICES: Option<string>[] = [
-  { id: "Sadaltager",   label: "Sadaltager — knowledgeable" },
-  { id: "Charon",       label: "Charon — informative" },
-  { id: "Sulafat",      label: "Sulafat — warm" },
-  { id: "Aoede",        label: "Aoede — breezy" },
-  { id: "Achird",       label: "Achird — friendly" },
-  { id: "Vindemiatrix", label: "Vindemiatrix — gentle" },
-  { id: "Kore",         label: "Kore — firm" },
-  { id: "Puck",         label: "Puck — upbeat" },
-  { id: "Zephyr",       label: "Zephyr — bright" },
-  { id: "Algieba",      label: "Algieba — smooth" },
-];
-
-const ELEVENLABS_VOICES: Option<string>[] = [
-  { id: "9q3uhh453wT9R7x3sW1i", label: "Alper (istanbul, male)" },
-  { id: "viS7lLPHrcuZhqLroKB8", label: "Cengizhan Atalay - Narrator (istanbul, male)" },
-  { id: "ZaoBgxgzPhoCm533Pb7B", label: "Zeynep Signature Voice Warm (istanbul, female)" },
-  { id: "pNInz6obpgDQGcFmaJgB", label: "Adam - Dominant, Firm (american, male)" },
-  { id: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice - Clear, Engaging Educator (british, female)" },
-  { id: "hpp4J3VqNfWAUOO0d1Us", label: "Bella - Professional, Bright, Warm (american, female)" },
-  { id: "pqHfZKP75CvOlQylNhV4", label: "Bill - Wise, Mature, Balanced (american, male)" },
-  { id: "nPczCjzI2devNBz1zQrb", label: "Brian - Deep, Resonant and Comforting (american, male)" },
-  { id: "N2lVS1w4EtoT3dr4eOWO", label: "Callum - Husky Trickster (american, male)" },
-  { id: "IKne3meq5aSn9XLyUdCD", label: "Charlie - Deep, Confident, Energetic (australian, male)" },
-  { id: "iP95p4xoKVk53GoZ742B", label: "Chris - Charming, Down-to-Earth (american, male)" },
-  { id: "onwK4e9ZLuTAKqWW03F9", label: "Daniel - Steady Broadcaster (british, male)" },
-  { id: "cjVigY5qzO86Huf0OWal", label: "Eric - Smooth, Trustworthy (american, male)" },
-  { id: "JBFqnCBsd6RMkjVDRZzb", label: "George - Warm, Captivating Storyteller (british, male)" },
-  { id: "SOYHLrjzK2X1ezoPC6cr", label: "Harry - Fierce Warrior (american, male)" },
-  { id: "cgSgspJ2msm6clMCkdW9", label: "Jessica - Playful, Bright, Warm (american, female)" },
-  { id: "FGY2WhTYpPnrIDTdsKH5", label: "Laura - Enthusiast, Quirky Attitude (american, female)" },
-  { id: "TX3LPaxmHKxFdv7VOQHJ", label: "Liam - Energetic, Social Media Creator (american, male)" },
-  { id: "pFZP5JQG7iQjIQuC4Bku", label: "Lily - Velvety Actress (british, female)" },
-  { id: "XrExE9yKIg1WjnnlVkGX", label: "Matilda - Knowledgable, Professional (american, female)" },
-  { id: "SAz9YHcvj6GT2YYXdXww", label: "River - Relaxed, Neutral, Informative (american, neutral)" },
-  { id: "CwhRBWXzGAHq8TQ4Fs17", label: "Roger - Laid-Back, Casual, Resonant (american, male)" },
-  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah - Mature, Reassuring, Confident (american, female)" },
-  { id: "bIHbv24MWmeRgasZH58o", label: "Will - Relaxed Optimist (american, male)" },
-];
-
-const VOICES: Record<ProviderId, Option<string>[]> = {
-  gemini: GEMINI_VOICES,
-  elevenlabs: ELEVENLABS_VOICES,
-};
-
-const DEFAULT_VOICE: Record<ProviderId, string> = {
-  gemini: "Sadaltager",
-  elevenlabs: "ZaoBgxgzPhoCm533Pb7B", // Zeynep (TR)
-};
-
-const MOODS: Record<LangId, Option<MoodId>[]> = {
-  uz: [
-    { id: "default",        label: "Oddiy" },
-    { id: "math_teacher",   label: "Matematika ustozi" },
-    { id: "novel_reader",   label: "Roman o'quvchisi" },
-    { id: "school_teacher", label: "Maktab o'qituvchisi" },
-    { id: "journalist",     label: "Jurnalist" },
-  ],
-  ru: [
-    { id: "default",        label: "Обычный" },
-    { id: "math_teacher",   label: "Учитель математики" },
-    { id: "novel_reader",   label: "Чтец романа" },
-    { id: "school_teacher", label: "Школьный учитель" },
-    { id: "journalist",     label: "Журналист" },
-  ],
-};
-
-const UI = {
-  uz: {
-    eyebrow: "Multi-provider TTS · Stream",
-    title: "Ovozli o'qib berish",
-    subtitle: "Bitta gap yozing — ovoz darhol oqim qilib eshitiladi.",
-    matn: "Matn",
-    placeholder: "Bu yerga gap yozing…",
-    sample: "Namuna gap qo'yish",
-    play: "Eshitish",
-    busy: "Yuklanmoqda…",
-    empty: "Matn kiriting.",
-    starting: "Oqim boshlanmoqda…",
-    playing: "Eshitilmoqda…",
-    autoplayFail: "Avtomatik ijro ishlamadi — pleerda Play tugmasini bosing.",
-    loadFail: "Audio yuklab bo'lmadi. Server ishga tushganmi va kalit o'rnatilganmi?",
-    ended: "Tugadi.",
-    provider: "Provayder",
-    lang: "Til",
-    voice: "Ovoz",
-    mood: "Kayfiyat",
-    footer: "ElevenLabs v3 · O'zbek uchun turkcha fonetika + transliteratsiya qo'llaniladi.",
-  },
-  ru: {
-    eyebrow: "Multi-provider TTS · Stream",
-    title: "Озвучка текста",
-    subtitle: "Введите одно предложение — голос начнётся сразу, потоком.",
-    matn: "Текст",
-    placeholder: "Введите предложение…",
-    sample: "Вставить пример",
-    play: "Слушать",
-    busy: "Загрузка…",
-    empty: "Введите текст.",
-    starting: "Начинается поток…",
-    playing: "Воспроизведение…",
-    autoplayFail: "Автовоспроизведение не сработало — нажмите Play в плеере.",
-    loadFail: "Не удалось загрузить аудио. Сервер запущен и ключ установлен?",
-    ended: "Готово.",
-    provider: "Провайдер",
-    lang: "Язык",
-    voice: "Голос",
-    mood: "Настроение",
-    footer: "ElevenLabs v3 — высокое качество, особенно для русского.",
-  },
-} as const;
-
-const state = {
-  provider: "gemini" as ProviderId,
-  lang: "uz" as LangId,
-  voice: DEFAULT_VOICE.gemini,
-  mood: "school_teacher" as MoodId,
-};
+const state: { gender: Gender } = { gender: "f" };
 
 const root = document.getElementById("app")!;
+root.innerHTML = /* html */ `
+  <main class="min-h-full flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-2xl">
+      <header class="mb-6 text-center">
+        <p class="text-xs uppercase tracking-[0.3em] text-indigo-300/70">ElevenLabs v3 · Stream</p>
+        <h1 class="mt-2 text-3xl sm:text-4xl font-semibold text-white">Ovozli o'qib berish</h1>
+        <p class="mt-2 text-sm text-zinc-400">Gap yozing, jinsi tanlang — ovoz darhol oqim qilib eshitiladi.</p>
+      </header>
 
-function optionsHtml<T extends string>(opts: Option<T>[], selected: T) {
-  return opts
-    .map((o) => `<option value="${o.id}"${o.id === selected ? " selected" : ""}>${o.label}</option>`)
-    .join("");
-}
-
-function ensureVoiceValid() {
-  const list = VOICES[state.provider];
-  if (!list.some((v) => v.id === state.voice)) {
-    state.voice = DEFAULT_VOICE[state.provider];
-  }
-}
-
-function render() {
-  const t = UI[state.lang];
-  ensureVoiceValid();
-  root.innerHTML = /* html */ `
-    <main class="min-h-full flex items-center justify-center px-4 py-10">
-      <div class="w-full max-w-2xl">
-        <header class="mb-6 text-center">
-          <p class="text-xs uppercase tracking-[0.3em] text-indigo-300/70">${t.eyebrow}</p>
-          <h1 class="mt-2 text-3xl sm:text-4xl font-semibold text-white">${t.title}</h1>
-          <p class="mt-2 text-sm text-zinc-400">${t.subtitle}</p>
-        </header>
-
-        <section class="rounded-2xl border border-white/10 bg-white/4 backdrop-blur p-5 sm:p-6 shadow-2xl shadow-indigo-950/30">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <label class="block">
-              <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.provider}</span>
-              <select id="sel-provider" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
-                ${optionsHtml(PROVIDERS, state.provider)}
-              </select>
-            </label>
-            <label class="block">
-              <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.lang}</span>
-              <select id="sel-lang" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
-                ${optionsHtml(LANGS, state.lang)}
-              </select>
-            </label>
-            <label class="block col-span-2 sm:col-span-1">
-              <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.voice}</span>
-              <select id="sel-voice" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
-                ${optionsHtml(VOICES[state.provider], state.voice)}
-              </select>
-            </label>
-            <label class="block col-span-2 sm:col-span-1">
-              <span class="block text-xs font-medium text-zinc-400 mb-1.5">${t.mood}</span>
-              <select id="sel-mood" class="w-full rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/60">
-                ${optionsHtml(MOODS[state.lang], state.mood)}
-              </select>
-            </label>
-          </div>
-
-          <label for="txt" class="block text-xs font-medium text-zinc-400 mb-2">${t.matn}</label>
-          <textarea
-            id="txt"
-            rows="4"
-            maxlength="1000"
-            class="w-full resize-none rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-transparent"
-            placeholder="${t.placeholder}"
-          ></textarea>
-
-          <div class="mt-3 flex items-center justify-between text-xs text-zinc-500">
-            <span id="count">0 / 1000</span>
-            <button id="sample" type="button" class="hover:text-zinc-300 transition">${t.sample}</button>
-          </div>
-
-          <div class="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      <section class="rounded-2xl border border-white/10 bg-white/4 backdrop-blur p-5 sm:p-6 shadow-2xl shadow-indigo-950/30">
+        <div class="mb-4 flex items-center justify-between">
+          <span class="text-xs font-medium text-zinc-400">Ovoz</span>
+          <div role="tablist" class="inline-flex rounded-xl border border-white/10 bg-black/30 p-1">
             <button
-              id="play"
-              class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 disabled:bg-zinc-700 disabled:text-zinc-400 px-5 py-3 font-medium text-white transition shadow-lg shadow-indigo-900/40"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                <path d="M6.3 3.7a1 1 0 0 0-1.5.87v10.86a1 1 0 0 0 1.5.87l9.4-5.43a1 1 0 0 0 0-1.74L6.3 3.7Z"/>
-              </svg>
-              <span id="play-label">${t.play}</span>
-            </button>
-            <audio id="player" controls class="flex-1 w-full rounded-xl"></audio>
+              id="g-f"
+              role="tab"
+              type="button"
+              class="px-4 py-1.5 text-sm rounded-lg transition bg-indigo-500 text-white"
+            >Jessica · ayol</button>
+            <button
+              id="g-m"
+              role="tab"
+              type="button"
+              class="px-4 py-1.5 text-sm rounded-lg transition text-zinc-400 hover:text-zinc-200"
+            >Liam · erkak</button>
           </div>
+        </div>
 
-          <div id="status" class="mt-4 text-xs text-zinc-400 min-h-5"></div>
-        </section>
+        <label for="txt" class="block text-xs font-medium text-zinc-400 mb-2">Matn</label>
+        <textarea
+          id="txt"
+          rows="5"
+          maxlength="1000"
+          class="w-full resize-none rounded-xl bg-black/30 border border-white/10 px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-transparent"
+          placeholder="Bu yerga gap yozing…"
+        ></textarea>
 
-        <footer class="mt-6 text-center text-[11px] text-zinc-600">${t.footer}</footer>
-      </div>
-    </main>
-  `;
-  bind();
-}
+        <div class="mt-3 flex items-center justify-between text-xs text-zinc-500">
+          <span id="count">0 / 1000</span>
+          <button id="sample" type="button" class="hover:text-zinc-300 transition">Namuna gap qo'yish</button>
+        </div>
+
+        <div class="mt-5 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <button
+            id="play"
+            class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600 disabled:bg-zinc-700 disabled:text-zinc-400 px-5 py-3 font-medium text-white transition shadow-lg shadow-indigo-900/40"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+              <path d="M6.3 3.7a1 1 0 0 0-1.5.87v10.86a1 1 0 0 0 1.5.87l9.4-5.43a1 1 0 0 0 0-1.74L6.3 3.7Z"/>
+            </svg>
+            <span id="play-label">Eshitish</span>
+          </button>
+          <audio id="player" controls class="flex-1 w-full rounded-xl"></audio>
+        </div>
+
+        <div id="status" class="mt-4 text-xs text-zinc-400 min-h-5"></div>
+      </section>
+
+      <footer class="mt-6 text-center text-[11px] text-zinc-600">
+        Multilingual auto-detect · bir xil matn ikkinchi marta → cache'dan
+      </footer>
+    </div>
+  </main>
+`;
+
+const $txt = document.getElementById("txt") as HTMLTextAreaElement;
+const $count = document.getElementById("count") as HTMLSpanElement;
+const $sample = document.getElementById("sample") as HTMLButtonElement;
+const $play = document.getElementById("play") as HTMLButtonElement;
+const $playLabel = document.getElementById("play-label") as HTMLSpanElement;
+const $player = document.getElementById("player") as HTMLAudioElement;
+const $status = document.getElementById("status") as HTMLDivElement;
+const $gf = document.getElementById("g-f") as HTMLButtonElement;
+const $gm = document.getElementById("g-m") as HTMLButtonElement;
+
+const ACTIVE_CLASS = "bg-indigo-500 text-white";
+const INACTIVE_CLASS = "text-zinc-400 hover:text-zinc-200";
+const BASE_TOGGLE = "px-4 py-1.5 text-sm rounded-lg transition";
+
+const setGender = (g: Gender) => {
+  state.gender = g;
+  $gf.className = `${BASE_TOGGLE} ${g === "f" ? ACTIVE_CLASS : INACTIVE_CLASS}`;
+  $gm.className = `${BASE_TOGGLE} ${g === "m" ? ACTIVE_CLASS : INACTIVE_CLASS}`;
+};
+$gf.addEventListener("click", () => setGender("f"));
+$gm.addEventListener("click", () => setGender("m"));
+
+const updateCount = () => {
+  $count.textContent = `${$txt.value.length} / 1000`;
+};
+$txt.addEventListener("input", updateCount);
+$sample.addEventListener("click", () => {
+  $txt.value = SAMPLE;
+  updateCount();
+  $txt.focus();
+});
+updateCount();
+
+const setStatus = (msg: string, tone: "idle" | "info" | "error" = "idle") => {
+  $status.textContent = msg;
+  $status.className =
+    "mt-4 text-xs min-h-5 " +
+    (tone === "error"
+      ? "text-rose-400"
+      : tone === "info"
+        ? "text-indigo-300"
+        : "text-zinc-400");
+};
+
+const setBusy = (busy: boolean) => {
+  $play.disabled = busy;
+  $playLabel.textContent = busy ? "Yuklanmoqda…" : "Eshitish";
+};
 
 let lastUrl = "";
-let lastTextValue = "";
 
-function bind() {
-  const t = UI[state.lang];
-  const $txt = document.getElementById("txt") as HTMLTextAreaElement;
-  const $count = document.getElementById("count") as HTMLSpanElement;
-  const $sample = document.getElementById("sample") as HTMLButtonElement;
-  const $play = document.getElementById("play") as HTMLButtonElement;
-  const $playLabel = document.getElementById("play-label") as HTMLSpanElement;
-  const $player = document.getElementById("player") as HTMLAudioElement;
-  const $status = document.getElementById("status") as HTMLDivElement;
-  const $selProvider = document.getElementById("sel-provider") as HTMLSelectElement;
-  const $selLang = document.getElementById("sel-lang") as HTMLSelectElement;
-  const $selVoice = document.getElementById("sel-voice") as HTMLSelectElement;
-  const $selMood = document.getElementById("sel-mood") as HTMLSelectElement;
-
-  $txt.value = lastTextValue;
-  const updateCount = () => {
-    $count.textContent = `${$txt.value.length} / 1000`;
-  };
-  $txt.addEventListener("input", () => {
-    lastTextValue = $txt.value;
-    updateCount();
-  });
-  updateCount();
-
-  $sample.addEventListener("click", () => {
-    $txt.value = SAMPLES[state.lang];
-    lastTextValue = $txt.value;
-    updateCount();
-    $txt.focus();
-  });
-
-  $selProvider.addEventListener("change", () => {
-    state.provider = $selProvider.value as ProviderId;
-    state.voice = DEFAULT_VOICE[state.provider];
-    render();
-  });
-  $selLang.addEventListener("change", () => {
-    state.lang = $selLang.value as LangId;
-    render();
-  });
-  $selVoice.addEventListener("change", () => {
-    state.voice = $selVoice.value;
-  });
-  $selMood.addEventListener("change", () => {
-    state.mood = $selMood.value as MoodId;
-  });
-
-  const setStatus = (msg: string, tone: "idle" | "info" | "error" = "idle") => {
-    $status.textContent = msg;
-    $status.className =
-      "mt-4 text-xs min-h-5 " +
-      (tone === "error"
-        ? "text-rose-400"
-        : tone === "info"
-          ? "text-indigo-300"
-          : "text-zinc-400");
-  };
-
-  const setBusy = (busy: boolean) => {
-    $play.disabled = busy;
-    $playLabel.textContent = busy ? t.busy : t.play;
-  };
-
-  $play.addEventListener("click", () => {
-    const text = $txt.value.trim();
-    if (!text) {
-      setStatus(t.empty, "error");
-      return;
-    }
-    const params = new URLSearchParams({
-      text,
-      provider: state.provider,
-      lang: state.lang,
-      voice: state.voice,
-      mood: state.mood,
-    });
-    const url = `${API_BASE}/api/tts?${params.toString()}`;
-    lastUrl = url;
-    setBusy(true);
-    setStatus(t.starting, "info");
-    $player.src = url;
-    $player.play().catch((err) => {
-      console.error(err);
-      setStatus(t.autoplayFail, "error");
-      setBusy(false);
-    });
-  });
-
-  $player.addEventListener("playing", () => {
+$play.addEventListener("click", () => {
+  const text = $txt.value.trim();
+  if (!text) {
+    setStatus("Matn kiriting.", "error");
+    return;
+  }
+  const params = new URLSearchParams({ text, g: state.gender });
+  const url = `${API_BASE}/api/tts?${params}`;
+  lastUrl = url;
+  setBusy(true);
+  setStatus("Oqim boshlanmoqda…", "info");
+  $player.src = url;
+  $player.play().catch((err) => {
+    console.error(err);
+    setStatus("Avtomatik ijro ishlamadi — pleerda Play tugmasini bosing.", "error");
     setBusy(false);
-    setStatus(t.playing, "info");
   });
-  $player.addEventListener("ended", () => setStatus(t.ended, "idle"));
-  $player.addEventListener("error", () => {
-    setBusy(false);
-    if ($player.src && $player.src === lastUrl) setStatus(t.loadFail, "error");
-  });
-}
+});
 
-render();
+$player.addEventListener("playing", () => {
+  setBusy(false);
+  setStatus("Eshitilmoqda…", "info");
+});
+$player.addEventListener("ended", () => setStatus("Tugadi.", "idle"));
+$player.addEventListener("error", () => {
+  setBusy(false);
+  if ($player.src && $player.src === lastUrl) {
+    setStatus("Audio yuklab bo'lmadi. Server va kalit tekshiring.", "error");
+  }
+});
