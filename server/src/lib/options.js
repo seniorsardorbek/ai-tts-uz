@@ -1,9 +1,3 @@
-// Used by /api/grade (legacy)
-export const LANGS = ['uz', 'ru'];
-export const DEFAULT_LANG = 'uz';
-export const isValidLang = (lang) => LANGS.includes(lang);
-
-// TTS contract
 export const GENDERS = ['m', 'f'];
 export const DEFAULT_GENDER = 'f';
 export const isValidGender = (g) => GENDERS.includes(g);
