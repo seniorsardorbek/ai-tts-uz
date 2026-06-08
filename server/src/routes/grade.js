@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { gradeText, gradeVoice } from '../lib/grading.js';
-import { DEFAULT_LANG, isValidLang } from '../lib/options.js';
+
+// Grading languages are independent of the TTS voice contract (options.js is
+// gender-only now), so keep this self-contained.
+const GRADE_LANGS = ['uz', 'ru'];
+const DEFAULT_LANG = 'uz';
+const isValidLang = (l) => GRADE_LANGS.includes(l);
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const MIN_ANSWER_LEN = 3;
