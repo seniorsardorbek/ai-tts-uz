@@ -62,9 +62,18 @@ router.get('/', async (req, res) => {
       res.setHeader('Content-Type', CONTENT_TYPE);
       res.setHeader('X-Cache', 'HIT');
       console.log(`[tts] HIT  ${gender} ${key}`);
-      res.sendFile(finalFile, { maxAge: '1h', acceptRanges: true }, (err) => {
-        if (err && !res.headersSent) res.status(500).end();
-      });
+      if (process.env.X_ACCEL_CACHE) {
+        // Behind nginx: hand the cached file off to nginx via an internal
+        // redirect. nginx streams it (sendfile + Range/206), freeing this
+        // single-threaded Node process from the byte-pushing entirely.
+        res.setHeader('X-Accel-Redirect', `/__cache/${gender}/${key}${FILE_EXT}`);
+        res.end();
+      } else {
+        // Local/dev (no nginx): serve the file ourselves with Range support.
+        res.sendFile(finalFile, { maxAge: '1h', acceptRanges: true }, (err) => {
+          if (err && !res.headersSent) res.status(500).end();
+        });
+      }
       return;
     }
 
