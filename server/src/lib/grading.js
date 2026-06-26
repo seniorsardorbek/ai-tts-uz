@@ -2,7 +2,7 @@ import { GoogleGenAI } from '@google/genai';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { toWav } from './transcode.js';
 
-const MODEL = process.env.GEMINI_GRADING_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_GRADING_MODEL || 'gemini-3.5-flash';
 const MAX_ATTEMPTS = 3;
 const BASE_DELAY_MS = 600;
 
@@ -140,12 +140,10 @@ async function callGemini({ lang, parts }) {
           systemInstruction: systemInstruction(lang),
           responseMimeType: 'application/json',
           temperature: 0.2,
-          // gemini-2.5-flash is a thinking model. The installed @google/genai 0.7.0
-          // does not pass thinkingConfig through, so thinking still runs and shares
-          // this budget — keep it generous so thinking + the (small) JSON both fit,
-          // otherwise the JSON gets truncated. maxOutputTokens is only a cap (unused
-          // tokens are not billed).
           maxOutputTokens: 2048,
+          // Disable thinking — grading needs none, and turning it off cuts latency
+          // ~4-5x (≈1.4s text / 2.6s voice vs 6-7s). Requires @google/genai >= 1.x
+          // (0.7.0 silently dropped thinkingConfig, so thinking always ran).
           thinkingConfig: { thinkingBudget: 0 },
         },
       });
