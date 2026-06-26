@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import ttsRoute from "./routes/tts.js";
 import gradeRoute from "./routes/grade.js";
+import cacheRoute from "./routes/cache.js";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -35,6 +36,7 @@ app.use(express.json({ limit: "1mb" })); // text-mode grading bodies only; skips
 app.get("/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/tts", ttsRoute);
 app.use("/api/grade", gradeRoute);
+app.use("/api/cache", cacheRoute);
 
 
 app.listen(PORT, () => {

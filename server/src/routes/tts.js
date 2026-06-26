@@ -122,6 +122,16 @@ router.get('/', async (req, res) => {
     }
 
     await fsp.rename(tmpFile, finalFile);
+    // Sidecar metadata so the cache-admin page can show the original text +
+    // creation time (the .mp3 filename is a one-way hash, text isn't recoverable).
+    try {
+      await fsp.writeFile(
+        path.join(dir, `${key}.json`),
+        JSON.stringify({ text, g: gender, createdAt: new Date().toISOString() }),
+      );
+    } catch (e) {
+      console.warn(`[tts] sidecar write failed ${key}: ${e.message || e}`);
+    }
     console.log(`[tts] cached ${gender} ${key} (${dataBytes}b)`);
   } catch (err) {
     console.error('[tts] error:', err.message || err);
