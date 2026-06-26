@@ -68,8 +68,10 @@ router.get('/:gender/:key/audio', (req, res) => {
   });
 });
 
-// DELETE /api/cache/:gender/:key — remove the mp3 + sidecar.
-router.delete('/:gender/:key', async (req, res) => {
+// Remove the mp3 + sidecar. Exposed as both DELETE and POST .../delete —
+// some proxies (e.g. the CRM in front) block the DELETE method (403), so the
+// browser uses the POST form.
+async function deleteEntry(req, res) {
   const p = safePaths(req.params.gender, req.params.key);
   if (!p) return res.status(400).json({ error: 'bad gender or key' });
   const unlink = async (f) => { try { await fsp.unlink(f); } catch (e) { if (e.code !== 'ENOENT') throw e; } };
@@ -82,6 +84,9 @@ router.delete('/:gender/:key', async (req, res) => {
     console.error('[cache] delete error:', err.message || err);
     res.status(500).json({ error: 'failed to delete' });
   }
-});
+}
+
+router.delete('/:gender/:key', deleteEntry);
+router.post('/:gender/:key/delete', deleteEntry);
 
 export default router;

@@ -71,8 +71,9 @@ export default function CacheAdmin() {
     if (!window.confirm(`O'chirilsinmi?\n\n"${it.text ?? it.key}"`)) return;
     setDeleting(it.key);
     try {
-      const res = await fetch(`${API_BASE}/api/cache/${it.gender}/${it.key}`, {
-        method: "DELETE",
+      // POST (not DELETE) — some proxies block the DELETE method (403).
+      const res = await fetch(`${API_BASE}/api/cache/${it.gender}/${it.key}/delete`, {
+        method: "POST",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setItems((prev) => prev.filter((x) => x.key !== it.key));

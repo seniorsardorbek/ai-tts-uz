@@ -146,7 +146,8 @@ function renderShell() {
       btn.disabled = true;
       btn.textContent = "…";
       try {
-        const res = await fetch(`${API_BASE}/api/cache/${item.gender}/${key}`, { method: "DELETE" });
+        // POST (not DELETE) — the CRM proxy blocks the DELETE method (403).
+        const res = await fetch(`${API_BASE}/api/cache/${item.gender}/${key}/delete`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         state.items = state.items.filter((i) => i.key !== key);
         if (state.playing === key) state.playing = null;
