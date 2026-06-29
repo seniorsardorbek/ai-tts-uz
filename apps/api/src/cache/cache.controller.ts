@@ -1,7 +1,8 @@
-import { Controller, Delete, Get, Param, Post, Res } from "@nestjs/common";
+import { Controller, Delete, Get, Param, Post, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
 import fs from "node:fs";
-import type { CacheListResponse } from "@ai-tts/shared";
+import { NO_LESSON } from "@ai-tts/shared";
+import type { CacheListResponse, LessonsResponse } from "@ai-tts/shared";
 import { CacheService } from "./cache.service";
 
 @Controller("api/cache")
@@ -11,6 +12,19 @@ export class CacheController {
   @Get()
   list(): Promise<CacheListResponse> {
     return this.cache.list();
+  }
+
+  // Lessons from the tts history (grouped; includes the no-lesson group).
+  @Get("lessons")
+  async lessons(): Promise<LessonsResponse> {
+    return { lessons: await this.cache.listLessons() };
+  }
+
+  // Cached speeches used in a lesson. lessonId=__none__ -> the no-lesson group.
+  @Get("lessons/speeches")
+  lessonSpeeches(@Query("lessonId") lessonId?: string): Promise<CacheListResponse> {
+    const id = !lessonId || lessonId === NO_LESSON ? null : lessonId;
+    return this.cache.lessonSpeeches(id);
   }
 
   // Preview a cached file (Range/206). Hash-validated (no path traversal).

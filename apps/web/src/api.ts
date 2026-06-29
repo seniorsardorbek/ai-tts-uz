@@ -1,4 +1,4 @@
-import type { CacheListResponse, Gender } from "@ai-tts/shared";
+import type { CacheListResponse, Gender, LessonSummary, LessonsResponse } from "@ai-tts/shared";
 
 // "" in dev (Vite proxies /api -> :4000); the CRM base in production builds.
 export const API_BASE = (import.meta.env.VITE_API_BASE ?? "") as string;
@@ -13,6 +13,18 @@ export function cacheAudioUrl(gender: string, key: string): string {
 
 export async function fetchCache(): Promise<CacheListResponse> {
   const res = await fetch(`${API_BASE}/api/cache`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+export async function fetchLessons(): Promise<LessonSummary[]> {
+  const res = await fetch(`${API_BASE}/api/cache/lessons`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return ((await res.json()) as LessonsResponse).lessons;
+}
+
+export async function fetchLessonSpeeches(lessonId: string): Promise<CacheListResponse> {
+  const res = await fetch(`${API_BASE}/api/cache/lessons/speeches?lessonId=${encodeURIComponent(lessonId)}`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }

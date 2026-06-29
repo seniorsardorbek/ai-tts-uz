@@ -33,6 +33,22 @@ export interface CacheListResponse {
   items: CacheItem[];
 }
 
+// A lesson group derived from the tts_requests history.
+export interface LessonSummary {
+  lessonId: string | null; // null = the "no lesson" group
+  lessonName: string | null;
+  speechCount: number; // distinct cached speeches used in this lesson
+  requestCount: number; // total tts requests (incl. repeats / HITs)
+  lastUsed: string; // ISO
+}
+
+export interface LessonsResponse {
+  lessons: LessonSummary[];
+}
+
+// Sentinel used in the URL for the "no lesson" group.
+export const NO_LESSON = "__none__";
+
 export interface GradeResult {
   correct: boolean;
   feedback: string;
