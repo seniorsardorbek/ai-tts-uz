@@ -1,0 +1,15 @@
+{
+  "name": "ai-tts-uz",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @ai-tts/shared",
+    "dev:api": "npm run start:dev -w @ai-tts/api",
+    "dev:web": "npm run dev -w @ai-tts/web",
+    "build": "npm run build -w @ai-tts/shared && npm run build -w @ai-tts/api && npm run build -w @ai-tts/web"
+  }
+}
