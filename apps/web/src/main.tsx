@@ -4,11 +4,28 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
 import TtsPage from "./pages/TtsPage";
 import CachePage from "./pages/CachePage";
+import LoginPage from "./pages/LoginPage";
+import RequireAuth from "./components/RequireAuth";
 
 const router = createBrowserRouter(
   [
-    { path: "/", element: <TtsPage /> },
-    { path: "/cache", element: <CachePage /> },
+    { path: "/login", element: <LoginPage /> },
+    {
+      path: "/",
+      element: (
+        <RequireAuth>
+          <TtsPage />
+        </RequireAuth>
+      ),
+    },
+    {
+      path: "/cache",
+      element: (
+        <RequireAuth>
+          <CachePage />
+        </RequireAuth>
+      ),
+    },
   ],
   { basename: import.meta.env.BASE_URL.replace(/\/$/, "") },
 );

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { Gender } from "@ai-tts/shared";
 import { ttsUrl } from "../api";
+import { logout } from "../auth";
 
 const SAMPLE =
   "Madinada ikkita olma bor edi lekin Sardor bittasini tortib oldi, Madinada nechta olma qoldi";
@@ -15,6 +16,12 @@ export default function TtsPage() {
   const [busy, setBusy] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const lastUrl = useRef("");
+  const navigate = useNavigate();
+
+  const signOut = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   const play = () => {
     const t = text.trim();
@@ -53,9 +60,14 @@ export default function TtsPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-indigo-300/70">ElevenLabs v3 · Stream</p>
           <h1 className="mt-2 text-3xl sm:text-4xl font-semibold text-white">Ovozli o'qib berish</h1>
           <p className="mt-2 text-sm text-zinc-400">Gap yozing, jinsini tanlang — ovoz darhol oqim qilib eshitiladi.</p>
-          <Link to="/cache" className="mt-2 inline-block text-xs text-indigo-300 hover:text-indigo-200">
-            → Cache boshqaruvi
-          </Link>
+          <div className="mt-2 flex items-center justify-center gap-4">
+            <Link to="/cache" className="text-xs text-indigo-300 hover:text-indigo-200">
+              → Cache boshqaruvi
+            </Link>
+            <button onClick={signOut} className="text-xs text-zinc-500 hover:text-zinc-300">
+              Chiqish
+            </button>
+          </div>
         </header>
 
         <section className="rounded-2xl border border-white/10 bg-white/4 backdrop-blur p-5 sm:p-6 shadow-2xl shadow-indigo-950/30">
