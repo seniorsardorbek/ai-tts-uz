@@ -8,6 +8,9 @@ const DEFAULT_CORS_ORIGINS = [
   "http://localhost:5174",
   "https://juniorit.vercel.app",
   "https://go.junior-it.uz",
+  "https://qa-go.junior-it.uz",
+  "https://lms.coddycamp.uz",
+  "https://qa-lms.coddycamp.uz",
 ];
 
 async function bootstrap() {
