@@ -1,6 +1,7 @@
 import { API_BASE } from "./api";
 
 const TOKEN_KEY = "ai-tts-admin-token";
+const USER_KEY = "ai-tts-admin-user";
 
 export function getToken(): string | null {
   try {
@@ -10,9 +11,18 @@ export function getToken(): string | null {
   }
 }
 
-function setToken(token: string): void {
+export function getUsername(): string | null {
+  try {
+    return localStorage.getItem(USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setSession(token: string, username: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, username);
   } catch {
     /* ignore */
   }
@@ -21,6 +31,7 @@ function setToken(token: string): void {
 export function logout(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   } catch {
     /* ignore */
   }
@@ -40,7 +51,7 @@ export async function login(username: string, password: string): Promise<string>
   if (res.status === 401) throw new Error("Login yoki parol noto'g'ri");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = (await res.json()) as { token: string; username: string };
-  setToken(data.token);
+  setSession(data.token, data.username);
   return data.username;
 }
 

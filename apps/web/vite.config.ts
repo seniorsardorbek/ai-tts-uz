@@ -6,6 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: "/ms/lesson-runner/",
   plugins: [react(), tailwindcss()],
+  // @ai-tts/shared ships CommonJS; pre-bundle it so dev (browser ESM) gets its named exports.
+  optimizeDeps: { include: ["@ai-tts/shared"] },
   server: {
     port: 5173,
     // dev: proxy API calls to the local NestJS API so API_BASE can stay empty
