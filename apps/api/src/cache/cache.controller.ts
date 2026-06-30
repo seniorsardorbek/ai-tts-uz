@@ -32,6 +32,21 @@ export class CacheController {
     return this.cache.lessonSpeeches(id);
   }
 
+  // Delete a whole lesson (its history + orphaned voices). __none__ = no-lesson group.
+  // MUST stay above the :gender/:key routes so it isn't matched as gender="lessons".
+  @Post("lessons/:lessonId/delete")
+  async deleteLesson(@Param("lessonId") lessonId: string, @Res() res: Response): Promise<void> {
+    const id = !lessonId || lessonId === NO_LESSON ? null : lessonId;
+    try {
+      const { deleted } = await this.cache.removeLesson(id);
+      console.log(`[cache] deleted lesson ${lessonId} (${deleted} voices)`);
+      res.json({ ok: true, deleted });
+    } catch (err: any) {
+      console.error("[cache] lesson delete error:", err.message || err);
+      res.status(500).json({ error: "failed to delete lesson" });
+    }
+  }
+
   // Preview a cached file (Range/206). Hash-validated (no path traversal).
   @Get(":gender/:key/audio")
   audio(@Param("gender") gender: string, @Param("key") key: string, @Res() res: Response): void {

@@ -48,6 +48,16 @@ export async function deleteCache(gender: string, key: string): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
+// Delete a whole lesson: its history + orphaned voices (__none__ = no-lesson group).
+export async function deleteLesson(lessonId: string): Promise<{ deleted: number }> {
+  const res = await fetch(`${API_BASE}/api/cache/lessons/${encodeURIComponent(lessonId)}/delete`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 /* ---------- regenerate (replace) a cached slot's audio ---------- */
 
 // Generate a staged preview (<key>.preview.mp3) from a different prompt/voice.

@@ -172,4 +172,34 @@ export class CacheService {
     await this.repo.delete({ cacheKey: key });
     return true;
   }
+
+  // Delete a whole lesson: its tts_requests history + every voice (audio + cache
+  // row) that becomes orphaned by that deletion. lessonId null = the no-lesson group.
+  // A cache key still referenced by ANOTHER lesson's requests is kept (safe GC).
+  async removeLesson(lessonId: string | null): Promise<{ deleted: number }> {
+    const where = lessonId === null ? "lesson_id IS NULL" : "lesson_id = $1";
+    const params = lessonId === null ? [] : [lessonId];
+
+    // keys (with gender) this lesson references, BEFORE we delete its history
+    const keyRows: Array<{ key: string; gender: string }> = await this.repo.manager.query(
+      `SELECT DISTINCT c.cache_key AS key, c.gender
+       FROM tts_requests t JOIN cache_entries c ON c.cache_key = t.cache_key
+       WHERE ${where.replace(/lesson_id/g, "t.lesson_id")}`,
+      params,
+    );
+
+    // remove this lesson's request history
+    await this.repo.manager.query(`DELETE FROM tts_requests WHERE ${where}`, params);
+
+    // GC: drop only keys no longer referenced by any remaining request
+    let deleted = 0;
+    for (const { key, gender } of keyRows) {
+      const still: unknown[] = await this.repo.manager.query(
+        `SELECT 1 FROM tts_requests WHERE cache_key = $1 LIMIT 1`,
+        [key],
+      );
+      if (still.length === 0 && (await this.remove(gender, key))) deleted++;
+    }
+    return { deleted };
+  }
 }
