@@ -5,6 +5,7 @@ import { getUsername, logout } from "../auth";
 const NAV = [
   { to: "/", label: "TTS generator", icon: "🎙", end: true },
   { to: "/cache", label: "Darslar / Cache", icon: "📚", end: false },
+  { to: "/grading", label: "Baholash studio", icon: "🎓", end: false },
 ];
 
 export default function AdminLayout() {

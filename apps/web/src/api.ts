@@ -1,4 +1,4 @@
-import type { CacheListResponse, Gender, LessonSummary, LessonsResponse } from "@ai-tts/shared";
+import type { CacheListResponse, Gender, GradeResult, Lang, LessonSummary, LessonsResponse } from "@ai-tts/shared";
 import { getToken } from "./auth";
 
 // "" in dev (Vite proxies /api -> :4000); the CRM base in production builds.
@@ -97,4 +97,48 @@ export async function discardPreview(gender: string, key: string): Promise<void>
     method: "POST",
     headers: authHeaders(),
   }).catch(() => {}); // best-effort
+}
+
+/* ---------- grading studio ---------- */
+
+// student_uuid marks studio runs so they're distinguishable in grading analytics.
+const STUDIO_UUID = "admin-studio";
+
+async function gradeError(res: Response): Promise<Error> {
+  const body = await res.json().catch(() => null);
+  return new Error(body?.error || `HTTP ${res.status}`);
+}
+
+export async function gradeTextApi(
+  question: string,
+  rubric: string,
+  lang: Lang,
+  answerText: string,
+): Promise<GradeResult> {
+  const res = await fetch(`${API_BASE}/api/grade`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ question, rubric, lang, answerText, student_uuid: STUDIO_UUID }),
+  });
+  if (!res.ok) throw await gradeError(res);
+  return res.json();
+}
+
+export async function gradeVoiceApi(
+  question: string,
+  rubric: string,
+  lang: Lang,
+  audio: Blob,
+): Promise<GradeResult> {
+  const fd = new FormData();
+  fd.append("question", question);
+  fd.append("rubric", rubric);
+  fd.append("lang", lang);
+  fd.append("student_uuid", STUDIO_UUID);
+  const ext = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
+  fd.append("audio", audio, `answer.${ext}`);
+  // no Content-Type header — the browser sets the multipart boundary
+  const res = await fetch(`${API_BASE}/api/grade`, { method: "POST", headers: authHeaders(), body: fd });
+  if (!res.ok) throw await gradeError(res);
+  return res.json();
 }

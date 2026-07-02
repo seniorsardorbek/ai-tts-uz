@@ -82,30 +82,32 @@ Faqat shu shakldagi JSON qaytar, boshqa hech narsa yozma:
 ${shape}`;
   }
 
+  // Spoken answers are ALWAYS English (English lessons) — pinning the transcription
+  // language stops Gemini from mis-hearing English as Uzbek/Russian phonetics.
   private voiceInstruction(question: string, rubric: string, lang: Lang): string {
     const shape = `{"correct": boolean, "feedback": "string", "transcript": "string"}`;
     if (lang === "ru") {
-      return `Прикреплённое аудио — устный ответ ученика.
-1) Расшифруй аудио в текст (transcript).
-2) Оцени этот ответ по вопросу и критерию.
+      return `Прикреплённое аудио — устный ответ ученика. Ученик говорит ПО-АНГЛИЙСКИ (это ребёнок, изучающий английский, возможен акцент).
+1) Расшифруй аудио в текст (transcript) НА АНГЛИЙСКОМ ЯЗЫКЕ: запиши именно те английские слова, которые были сказаны. Не переводи и не подменяй их русскими или узбекскими словами.
+2) Оцени этот английский ответ по вопросу и критерию по смыслу.
 
 Вопрос: ${question}
 Критерий (rubric): ${rubric}
 
 Верни только JSON такой формы, и ничего больше:
 ${shape}
-transcript — точный текст того, что сказал ученик (на том же языке).`;
+transcript — точный английский текст того, что сказал ученик.`;
     }
-    return `Biriktirilgan audio — o'quvchining og'zaki javobi.
-1) Audioni matnga aylantir (transcript).
-2) Shu javobni savol va mezon asosida bahola.
+    return `Biriktirilgan audio — o'quvchining og'zaki javobi. O'quvchi INGLIZ TILIDA gapiradi (ingliz tilini o'rganayotgan bola, aksenti bo'lishi mumkin).
+1) Audioni INGLIZ TILIDA matnga aylantir (transcript): aytilgan inglizcha so'zlarni aynan yoz. Tarjima qilma, o'zbekcha yoki ruscha so'zlarga o'girma.
+2) Shu inglizcha javobni savol va mezon asosida mazmunan bahola.
 
 Savol: ${question}
 Baholash mezoni (rubric): ${rubric}
 
 Faqat shu shakldagi JSON qaytar, boshqa hech narsa yozma:
 ${shape}
-transcript — o'quvchi aytgan so'zlarning aniq matni (o'sha tilda).`;
+transcript — o'quvchi aytgan inglizcha so'zlarning aniq matni (ingliz tilida).`;
   }
 
   private parseGradeJson(raw: string | undefined, requireTranscript: boolean): GradeResult {

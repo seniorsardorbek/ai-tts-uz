@@ -7,6 +7,7 @@ import RequireAuth from "./components/RequireAuth";
 import TtsPage from "./pages/TtsPage";
 import LessonsPage from "./pages/LessonsPage";
 import LessonVoicesPage from "./pages/LessonVoicesPage";
+import GradingStudioPage from "./pages/GradingStudioPage";
 import LoginPage from "./pages/LoginPage";
 
 const router = createBrowserRouter(
@@ -22,6 +23,7 @@ const router = createBrowserRouter(
         { path: "/", element: <TtsPage /> },
         { path: "/cache", element: <LessonsPage /> },
         { path: "/cache/lessons/:lessonId", element: <LessonVoicesPage /> },
+        { path: "/grading", element: <GradingStudioPage /> },
       ],
     },
   ],
