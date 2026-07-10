@@ -5,7 +5,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import type { GradeResult, Lang } from "@ai-tts/shared";
 import { toWav } from "./transcode";
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 4;
 const BASE_DELAY_MS = 600;
 
 class BadShapeError extends Error {
@@ -20,6 +20,18 @@ export class GradingService {
 
   private model(): string {
     return this.config.get<string>("GEMINI_GRADING_MODEL") || "gemini-3.5-flash";
+  }
+
+  // Used when the primary model is overloaded (503) or retired (404) — a different
+  // generation sits in a separate capacity pool, so switching beats waiting.
+  // NOTE: gemini-2.5-* return 404 "no longer available to new users" on this key.
+  private fallbackModel(): string {
+    return this.config.get<string>("GEMINI_GRADING_MODEL_FALLBACK") || "gemini-3.1-flash-lite";
+  }
+
+  private isModelNotFound(err: any): boolean {
+    if (err?.status === 404) return true;
+    return /NOT_FOUND|is not found|was not found/i.test(String(err?.message ?? err));
   }
 
   private getClient(): GoogleGenAI {
@@ -146,11 +158,32 @@ transcript — o'quvchi aytgan inglizcha so'zlarning aniq matni (ingliz tilida).
 
   private async callGemini(lang: Lang, parts: any[]): Promise<string | undefined> {
     const ai = this.getClient();
+    const primary = this.model();
+    const fallback = this.fallbackModel();
+    // Alternate models across attempts: overload on one pool -> try the other
+    // immediately (no sleep on a model switch); back off only when returning
+    // to a model that already failed. A 404 marks that model dead for good.
+    const plan =
+      fallback === primary ? Array(MAX_ATTEMPTS).fill(primary) : [primary, fallback, primary, fallback];
+    const dead = new Set<string>(); // 404 — never try again
+    const failed = new Set<string>(); // transient failure — back off before re-trying it
     let lastErr: any;
-    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let backoff = 0;
+
+    for (let attempt = 1; attempt <= plan.length; attempt++) {
+      let model = plan[attempt - 1];
+      if (dead.has(model)) {
+        model = model === primary ? fallback : primary;
+        if (dead.has(model)) break;
+      }
+      if (failed.has(model)) {
+        // returning to a pool that already failed -> wait out the spike
+        backoff = backoff ? backoff * 2 : BASE_DELAY_MS;
+        await sleep(backoff);
+      }
       try {
         const resp = await ai.models.generateContent({
-          model: this.model(),
+          model,
           contents: [{ role: "user", parts }],
           config: {
             systemInstruction: this.systemInstruction(lang),
@@ -161,11 +194,18 @@ transcript — o'quvchi aytgan inglizcha so'zlarning aniq matni (ingliz tilida).
             thinkingConfig: { thinkingBudget: 0 },
           },
         });
+        if (model !== primary) console.warn(`[grade] answered by fallback model ${model}`);
         return resp.text;
       } catch (err: any) {
         lastErr = err;
-        if (attempt === MAX_ATTEMPTS || !this.isRetryable(err)) throw err;
-        await sleep(BASE_DELAY_MS * 2 ** (attempt - 1));
+        if (this.isModelNotFound(err)) {
+          dead.add(model);
+          console.warn(`[grade] model ${model} not found; falling back`);
+          continue; // switch models immediately
+        }
+        if (attempt === plan.length || !this.isRetryable(err)) throw err;
+        failed.add(model);
+        console.warn(`[grade] ${model} failed (${err?.status ?? err?.message ?? err}); switching model`);
       }
     }
     throw lastErr;
